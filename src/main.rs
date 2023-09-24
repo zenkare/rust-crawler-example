@@ -1,10 +1,10 @@
-extern crate crawler_structure_example;
+pub mod crawler;
 
 use clap::Parser;
 use std::{fs, time::Duration};
 
 use anyhow::Result;
-use crawler_structure_example::crawler::Crawler;
+use crawler::Crawler;
 use futures::StreamExt;
 use hyper::{
     client::{connect::dns::GaiResolver, HttpConnector},
