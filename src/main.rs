@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
         let mut crawler = Crawler::new(&client);
         for line in read_lines(&filename)?.iter_mut() {
             line.insert_str(0, "https://");
-            crawler.seed(&line);
+            crawler.seed(line);
         }
         while let Some(result) = crawler.next().await {
             match result {

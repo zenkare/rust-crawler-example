@@ -81,7 +81,7 @@ impl<'c> Crawler<'c> {
             }
         }
         msg.status = Some(head.status.into());
-        return Ok(msg);
+        Ok(msg)
     }
 
     fn queue_link(&mut self, link: &str) {
@@ -136,6 +136,6 @@ impl<'c> Stream for Crawler<'c> {
                 }
             }
         }
-        return Poll::Pending;
+        Poll::Pending
     }
 }
