@@ -27,9 +27,10 @@ type PendingMessage = Pin<Box<dyn Future<Output = Result<Message>>>>;
 
 type HyperClient = Client<TimeoutConnector<HttpsConnector<HttpConnector<GaiResolver>>>>;
 
-const MAX_CONCURRENT: usize = 50;
+const MAX_CONCURRENT_DEFAULT: u16 = 50;
 
 pub struct Crawler<'c> {
+    max_concurrent: u16,
     client: &'c HyperClient,
     queue: VecDeque<String>,
     pending: Vec<PendingMessage>,
@@ -39,11 +40,16 @@ pub struct Crawler<'c> {
 impl<'c> Crawler<'c> {
     pub fn new(client: &'c HyperClient) -> Crawler {
         Crawler {
+            max_concurrent: MAX_CONCURRENT_DEFAULT,
             client,
             queue: VecDeque::new(),
             pending: Vec::new(),
             unique: HashSet::new(),
         }
+    }
+
+    pub fn set_concurrent_requests(&mut self, n: u16) {
+        self.max_concurrent = n;
     }
 
     pub fn seed(&mut self, url: &str) {
@@ -114,7 +120,7 @@ impl<'c> Stream for Crawler<'c> {
             return Poll::Ready(None);
         }
         // Transfer more to pending if not full.
-        for _ in 0..MAX_CONCURRENT - slf.pending.len() {
+        for _ in 0..(slf.max_concurrent as isize - slf.pending.len() as isize) {
             if let Some(url) = slf.queue.pop_front() {
                 let msg = Crawler::new_message(&url, "GET");
                 let req = Crawler::create_request(&msg)?;
