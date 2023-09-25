@@ -8,10 +8,16 @@ The crawler will run indefinitely and has no rate limiting as this is expected
 to be as minimal as possible.
 
 ```
-Usage: rust-crawler-example [OPTIONS]
+Usage: rust-crawler-example [OPTIONS] --seed-file <SEED_FILE>
 
 Options:
-  -s, --seed-file <SEED_FILE>  Seed file to load seeds from
-  -h, --help                   Print help
-  -V, --version                Print version
+  -s, --seed-file <SEED_FILE>
+          Seed file to load seeds from
+  -c, --concurrent-requests <CONCURRENT_REQUESTS>
+          Sets the limit for concurrent requests. Default is 50
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
+
