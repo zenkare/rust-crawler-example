@@ -27,8 +27,6 @@ type PendingMessage = Pin<Box<dyn Future<Output = Result<Message>>>>;
 
 type HyperClient = Client<TimeoutConnector<HttpsConnector<HttpConnector<GaiResolver>>>>;
 
-const MAX_CONCURRENT_DEFAULT: u16 = 50;
-
 pub struct Crawler<'c> {
     max_concurrent: u16,
     client: &'c HyperClient,
@@ -38,9 +36,9 @@ pub struct Crawler<'c> {
 }
 
 impl<'c> Crawler<'c> {
-    pub fn new(client: &'c HyperClient) -> Crawler {
+    pub fn new(client: &'c HyperClient, mcr: u16) -> Crawler {
         Crawler {
-            max_concurrent: MAX_CONCURRENT_DEFAULT,
+            max_concurrent: mcr,
             client,
             queue: VecDeque::new(),
             pending: Vec::new(),
@@ -129,10 +127,10 @@ impl<'c> Stream for Crawler<'c> {
                     .push(Box::pin(Crawler::process_response(msg, fut)));
             }
         }
-        // Poll all pending http requests and remove the ones that are done.
+        // Poll all pending http requests until we find one that is complete.
         for (i, fut) in slf.pending.iter_mut().enumerate() {
             if let Poll::Ready(result) = fut.poll_unpin(cx) {
-                slf.pending.swap_remove(i); // Future is complete.
+                slf.pending.swap_remove(i);
                 match result {
                     Ok(msg) => {
                         slf.extract_and_queue(&msg);

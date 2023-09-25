@@ -13,12 +13,17 @@ use hyper::{
 use hyper_timeout::TimeoutConnector;
 use hyper_tls::HttpsConnector;
 
+const MAX_CONCURRENT_DEFAULT: u16 = 50;
+
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about=None)]
 struct Args {
     /// Seed file to load seeds from.
     #[arg(short, long)]
-    seed_file: Option<String>,
+    seed_file: String,
+    /// Sets the limit for concurrent requests. Default is 50.
+    #[arg(short, long)]
+    concurrent_requests: Option<u16>,
 }
 
 fn read_lines(filename: &str) -> Result<Vec<String>> {
@@ -32,27 +37,27 @@ fn read_lines(filename: &str) -> Result<Vec<String>> {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    if let Some(filename) = args.seed_file {
-        let mut connector = TimeoutConnector::new(HttpsConnector::new());
-        connector.set_connect_timeout(Some(Duration::from_secs(5)));
-        connector.set_read_timeout(Some(Duration::from_secs(30)));
-        connector.set_write_timeout(Some(Duration::from_secs(30)));
-        let client: Client<TimeoutConnector<HttpsConnector<HttpConnector<GaiResolver>>>> =
-            Client::builder().build(connector);
+    let mut connector = TimeoutConnector::new(HttpsConnector::new());
+    connector.set_connect_timeout(Some(Duration::from_secs(5)));
+    connector.set_read_timeout(Some(Duration::from_secs(30)));
+    connector.set_write_timeout(Some(Duration::from_secs(30)));
+    let client: Client<TimeoutConnector<HttpsConnector<HttpConnector<GaiResolver>>>> =
+        Client::builder().build(connector);
 
-        let mut crawler = Crawler::new(&client);
-        for line in read_lines(&filename)?.iter_mut() {
-            line.insert_str(0, "https://");
-            crawler.seed(line);
+    let mut crawler = Crawler::new(
+        &client,
+        args.concurrent_requests.unwrap_or(MAX_CONCURRENT_DEFAULT),
+    );
+
+    for line in read_lines(&args.seed_file)?.iter_mut() {
+        line.insert_str(0, "https://");
+        crawler.seed(line);
+    }
+    while let Some(result) = crawler.next().await {
+        match result {
+            Ok(msg) => println!("{}: {}", msg.url, msg.status.unwrap_or(0)),
+            Err(e) => println!("{}", e),
         }
-        while let Some(result) = crawler.next().await {
-            match result {
-                Ok(msg) => println!("{}: {}", msg.url, msg.status.unwrap_or(0)),
-                Err(e) => println!("{}", e),
-            }
-        }
-    } else {
-        println!("nothing to do");
     }
     Ok(())
 }
