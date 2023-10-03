@@ -1,11 +1,11 @@
 # Rust Crawler Example
 
-An example using rust hyper directly to start crawling the internet from a seed
+An example using rust hyper directly to start crawling websites from a seed
 file which contains domains. This was mainly an exercise for myself to learn how to limit
-the maximum concurrent number of futures of the same type. This is very useful for
-web crawling. The crawler struct is an async stream of completed http messages.
-The crawler will run indefinitely and has no rate limiting as this is expected
-to be as minimal as possible.
+the maximum concurrent number of futures of the same type. This is very useful
+for not exceeding the os file limit. The crawler struct is an async stream of
+completed http messages. The crawler will run indefinitely and has no rate
+limiting as this is expected to be as minimal as possible.
 
 ```
 Usage: rust-crawler-example [OPTIONS] --seed-file <SEED_FILE>
